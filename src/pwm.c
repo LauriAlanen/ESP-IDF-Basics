@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include "freertos\FreeRTOS.h"
+#include "freertos\timers.h"
 #include "esp_log.h "
 #include "esp_err.h"
 #include "driver/ledc.h"
@@ -8,9 +10,10 @@
 #define LEDC_OUTPUT_IO (19)
 #define LEDC_CHANNEL LEDC_CHANNEL_0
 #define LEDC_DUTY_RES LEDC_TIMER_13_BIT
-#define LEDC_DUTY (1200)
-#define LEDC_FREQUENCY (2000)
+#define LEDC_DUTY (8190)
+#define LEDC_FREQUENCY (1000)
 
+#define FADE_DELAY 7
 
 static void init_ledc(void)
 {
@@ -42,7 +45,25 @@ static void init_ledc(void)
 
 int app_main(void){
     init_ledc();
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, LEDC_DUTY));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
+    while (1)
+    {
+        for (int i=0; i<LEDC_DUTY; i++) 
+        {
+            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, i));
+            ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
+            vTaskDelay(FADE_DELAY/portTICK_PERIOD_MS);
+        }
+        for (int i=LEDC_DUTY; i>0; i--) 
+        {
+            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, i));
+            ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
+            vTaskDelay(FADE_DELAY/portTICK_PERIOD_MS);
+        }
+
+    }
+    
+
+    
+
     return 0;
 }
