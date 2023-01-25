@@ -5,19 +5,20 @@
 #include "esp_err.h"
 #include "driver/ledc.h"
 
-#define LEDC_TIMER LEDC_TIMER_0 // Select timer 0
-#define LEDC_MODE LEDC_LOW_SPEED_MODE // Set the speed mode to LOW
-#define LEDC_OUTPUT_IO (19) //GPIO 19   
-#define LEDC_CHANNEL LEDC_CHANNEL_0 // Set the channel to 0
-#define LEDC_DUTY_RES LEDC_TIMER_13_BIT // Use 13 Bit timer
-#define LEDC_DUTY (8190) // Because we use 13-bit timer 8190 corresponds 100% duty cycle.
-#define LEDC_FREQUENCY (1000) // Well here you can set the frequency
+#define LEDC_TIMER LEDC_TIMER_0
+#define LEDC_MODE LEDC_HIGH_SPEED_MODE
+#define LEDC_OUTPUT_IO (19)
+#define LEDC_CHANNEL LEDC_CHANNEL_0
+#define LEDC_DUTY_RES LEDC_TIMER_13_BIT
+#define LEDC_DUTY (8190)
+#define LEDC_FREQUENCY (1000)
+#define ESP_INT_FLAG_LEVEL ESP_INTR_FLAG_LEVEL1
 
-#define FADE_DELAY 7 // The time between every duty cycle change in the for loops.
+#define LEDC_FADE_TIME 400
 
-static void init_ledc(void) 
+static void init_ledc(void)
 {
-    ledc_timer_config_t ledc_timer = { // This struct contains all the configurations of timer.
+    ledc_timer_config_t ledc_timer = {
         .speed_mode = LEDC_MODE,
         .timer_num = LEDC_TIMER,
         .duty_resolution = LEDC_DUTY_RES,
@@ -25,10 +26,10 @@ static void init_ledc(void)
         .clk_cfg = LEDC_AUTO_CLK
     };
 
-    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer)); // Pass the timer config struct here
+    ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
 
 
-    ledc_channel_config_t ledc_channel = { // This struct contains all the configurations of channel.
+    ledc_channel_config_t ledc_channel = {
         .speed_mode = LEDC_MODE,
         .channel = LEDC_CHANNEL,
         .timer_sel = LEDC_TIMER,
@@ -38,28 +39,33 @@ static void init_ledc(void)
         .hpoint = 0
     };
 
-    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel)); // Pass the channel config struct here
+    ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 }
 
 
 
-int app_main(void){ 
-    init_ledc(); // Call the init_ledc function which has all the configs
+int app_main(void){
+    init_ledc();
+
+    ESP_ERROR_CHECK(ledc_fade_func_install(ESP_INT_FLAG_LEVEL));
+
     while (1)
     {
-        for (int i=0; i<LEDC_DUTY; i++) // Change the duty cycle one step at a time until it hits 8190
-        {
-            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, i)); // Set the duty cycle here
-            ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL)); // Apply the update
-            vTaskDelay(FADE_DELAY/portTICK_PERIOD_MS); // Wait for FADE_DELAY amount of ms.
-        }
-        for (int i=LEDC_DUTY; i>0; i--)   // Change the duty cycle one step at a time until it hits 0
-        {
-            ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, i));
-            ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LEDC_CHANNEL));
-            vTaskDelay(FADE_DELAY/portTICK_PERIOD_MS);
-        }
-
+        ESP_ERROR_CHECK(ledc_set_fade_time_and_start(
+        LEDC_MODE,
+        LEDC_CHANNEL,
+        LEDC_DUTY,
+        LEDC_FADE_TIME,
+        LEDC_FADE_NO_WAIT
+    ));
+        ESP_ERROR_CHECK(ledc_set_fade_time_and_start(
+        LEDC_MODE,
+        LEDC_CHANNEL,
+        0,
+        LEDC_FADE_TIME,
+        LEDC_FADE_NO_WAIT
+    ));
     }
+    
     return 0;
 }
