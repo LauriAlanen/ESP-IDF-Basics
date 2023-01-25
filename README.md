@@ -2,7 +2,7 @@
 ### Projects using ESP32S and C from absolute beginning
 ##### - All the comments in the C files are mostly useless, but for the sake of my understanding they are there. And yeah they might not be 100% correct!
 ##### - I have few years of arduino backround, but i wanted to do something more "useful" which would help me towards embedded systems engineer career. So i decided to start doing basic projects using just C and ESP-IDF. 
-##### - If you want to try using these C programs run them in PlarformIO. 
+##### - If you want to try using these C programs run them in PlarformIO with ESP-IDF. 
 
 
 ### Useful link for help -----> https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/peripherals/index.html
